@@ -155,7 +155,7 @@ export default function Chat() {
                       </div>
                     </div>
                     <div className="flex-1">
-                      {message.type === 'image' ? (
+                      {message.type === 'image' && message.imageUrl ? (
                         <div className="mb-4 transform transition-all duration-300 hover:scale-[1.02]">
                           <Image
                             src={message.imageUrl}
@@ -165,13 +165,14 @@ export default function Chat() {
                             className="max-w-md rounded-lg shadow-lg border border-[rgba(45,226,230,0.2)]"
                           />
                         </div>
-                      ) : (
+                      ) : null}
+                      {message.type === 'text' ? (
                         <Message
                           content={message.content}
                           role={message.role}
                           isTyping={false}
                         />
-                      )}
+                      ) : null}
                     </div>
                   </div>
                 </div>

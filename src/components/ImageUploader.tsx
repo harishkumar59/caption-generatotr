@@ -12,6 +12,24 @@ export default function ImageUploader({ onImageSelect }: ImageUploaderProps) {
   const [isDragging, setIsDragging] = useState(false);
   const [preview, setPreview] = useState<string | null>(null);
 
+  const handleFiles = useCallback((files: FileList) => {
+    if (files?.[0]) {
+      const file = files[0];
+      if (file.type.startsWith('image/')) {
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          const base64String = reader.result as string;
+          setPreview(base64String);
+          onImageSelect(base64String);
+          setTimeout(() => {
+            setPreview(null);
+          }, 1000);
+        };
+        reader.readAsDataURL(file);
+      }
+    }
+  }, [onImageSelect]);
+
   const handleDrag = useCallback((e: React.DragEvent) => {
     e.preventDefault();
     e.stopPropagation();
@@ -31,29 +49,11 @@ export default function ImageUploader({ onImageSelect }: ImageUploaderProps) {
     handleFiles(files);
   }, [handleFiles]);
 
-  const handleFiles = (files: FileList) => {
-    if (files?.[0]) {
-      const file = files[0];
-      if (file.type.startsWith('image/')) {
-        const reader = new FileReader();
-        reader.onloadend = () => {
-          const base64String = reader.result as string;
-          setPreview(base64String);
-          onImageSelect(base64String);
-          setTimeout(() => {
-            setPreview(null);
-          }, 1000);
-        };
-        reader.readAsDataURL(file);
-      }
-    }
-  };
-
-  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileSelect = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
       handleFiles(e.target.files);
     }
-  };
+  }, [handleFiles]);
 
   return (
     <div className="w-full">
