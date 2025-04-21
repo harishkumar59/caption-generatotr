@@ -62,7 +62,7 @@ export default function ChatLayout() {
             <div className="w-8 h-8 rounded-md bg-[rgba(45,226,230,0.1)] flex items-center justify-center border border-[rgba(45,226,230,0.3)]">
               <span className="text-[rgba(45,226,230,0.9)]">S</span>
             </div>
-            <div className="ml-3 text-sm text-[rgba(229,231,235,0.9)]">Sameer Siddiqui</div>
+            <div className="ml-3 text-sm text-[rgba(229,231,235,0.9)]">Harish and nitin</div>
           </div>
         </div>
       </div>
@@ -73,7 +73,7 @@ export default function ChatLayout() {
         <div className="flex items-center justify-center py-8 mb-8">
           <h1 className="text-4xl font-bold">
             <span className="neon-orange mr-2">✧</span>
-            <span className="gradient-text">How&apos;s it going, Sameer?</span>
+            <span className="gradient-text">How&apos;s it going, Harish and nitin?</span>
           </h1>
         </div>
         

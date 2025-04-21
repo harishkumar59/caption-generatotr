@@ -5,9 +5,10 @@ import React, { useState, FormEvent, KeyboardEvent } from 'react';
 type ChatInputProps = {
   onSendMessage: (message: string) => void;
   isLoading: boolean;
+  placeholder?: string;
 };
 
-export default function ChatInput({ onSendMessage, isLoading }: ChatInputProps) {
+export default function ChatInput({ onSendMessage, isLoading, placeholder = "How can I help you today?" }: ChatInputProps) {
   const [message, setMessage] = useState('');
 
   const handleSubmit = (e: FormEvent) => {
@@ -33,8 +34,8 @@ export default function ChatInput({ onSendMessage, isLoading }: ChatInputProps) 
             value={message}
             onChange={(e) => setMessage(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder="How can I help you today?"
-            className="w-full resize-none bg-transparent py-4 pl-4 pr-16 outline-none focus:ring-0 rounded-2xl max-h-[180px] text-[rgba(229,231,235,0.9)] placeholder-[rgba(229,231,235,0.5)]"
+            placeholder={placeholder}
+            className="w-full resize-none bg-transparent py-4 pl-4 pr-32 outline-none focus:ring-0 rounded-2xl max-h-[180px] text-[rgba(229,231,235,0.9)] placeholder-[rgba(229,231,235,0.5)]"
             rows={1}
             disabled={isLoading}
           />

@@ -1,127 +1,83 @@
-"use client";
+  "use client";
 
 import React, { useState, useRef, useEffect } from 'react';
 import Message from './Message';
 import ChatInput from './ChatInput';
+import ImageUploader from './ImageUploader';
+import ImageIcon from './ImageIcon';
 
 type MessageType = {
   content: string;
   role: 'user' | 'assistant';
-  id: string; // Add an ID for tracking purposes
+  id: string;
+  type?: 'text' | 'image';
+  imageUrl?: string;
 };
 
 export default function Chat() {
   const [messages, setMessages] = useState<MessageType[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [currentImage, setCurrentImage] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   
-  // For typewriter effect - reducing from 30ms to 5ms per character for much faster typing
-  const [typingMessageId, setTypingMessageId] = useState<string | null>(null);
-  const [displayedContent, setDisplayedContent] = useState('');
-  const [fullContent, setFullContent] = useState('');
-  const typingSpeedRef = useRef(5); // Milliseconds per character - much faster now
-
-  // Also add support for typing multiple characters at once for even faster effect
-  const charsPerTickRef = useRef(3); // Type 3 characters at a time
-
-  // Scroll to bottom of messages
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages, displayedContent]);
+  }, [messages]);
 
-  // Typewriter effect - updated to type multiple characters at once
-  useEffect(() => {
-    if (!typingMessageId || !fullContent) return;
-    
-    if (displayedContent.length >= fullContent.length) {
-      // We're done typing
-      setTimeout(() => {
-        // Update the message with full content and stop typing effect
-        setMessages(prev => 
-          prev.map(msg => 
-            msg.id === typingMessageId 
-              ? { ...msg, content: fullContent } 
-              : msg
-          )
-        );
-        setTypingMessageId(null);
-        setDisplayedContent('');
-        setFullContent('');
-      }, 100);
-      return;
-    }
-    
-    // Add multiple characters at a time
-    const timeoutId = setTimeout(() => {
-      setDisplayedContent(prev => {
-        const remainingChars = fullContent.length - prev.length;
-        const charsToAdd = Math.min(charsPerTickRef.current, remainingChars);
-        return prev + fullContent.substr(prev.length, charsToAdd);
-      });
-    }, typingSpeedRef.current);
-    
-    return () => clearTimeout(timeoutId);
-  }, [typingMessageId, fullContent, displayedContent]);
-  
-  // Generate a unique ID
   const generateId = () => `msg_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 
-  const handleSendMessage = async (content: string) => {
-    // Reset error state
+  const handleImageSelect = async (imageData: string) => {
     setError(null);
+    setCurrentImage(imageData);
     
-    // Add user message to chat
     const userMessageId = generateId();
-    const userMessage: MessageType = { content, role: 'user', id: userMessageId };
-    setMessages((prev) => [...prev, userMessage]);
+    const userMessage: MessageType = {
+      content: "Generate captions for this image",
+      role: 'user',
+      id: userMessageId,
+      type: 'image',
+      imageUrl: imageData
+    };
     
+    setMessages((prev) => [...prev, userMessage]);
+    await generateCaptions(imageData);
+  };
+    
+  const generateCaptions = async (imageData: string) => {
     setIsLoading(true);
     
     try {
-      // Create a message array without IDs for the API
-      const messagesForApi = [...messages, userMessage].map(({ content, role }) => ({ content, role }));
-      
-      console.log('Sending messages to API:', JSON.stringify(messagesForApi));
-      
       const response = await fetch('/api/gemini/chat', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ messages: messagesForApi }),
+        body: JSON.stringify({
+          messages: [],
+          image: imageData,
+          prompt: "Generate 5 engaging social media captions for this image. Make them creative and include relevant hashtags. Format each caption on a new line and number them 1-5."
+        }),
       });
       
       const data = await response.json();
       
       if (!response.ok) {
-        console.error('API error:', data);
         throw new Error(data.error || `API returned ${response.status}`);
       }
       
-      // Check if data contains a text response
       if (data && data.text) {
-        // Create a new assistant message
         const assistantMessageId = generateId();
         const assistantMessage: MessageType = { 
-          content: '', // Start with empty content for typewriter effect
+          content: data.text,
           role: 'assistant', 
-          id: assistantMessageId 
+          id: assistantMessageId,
+          type: 'text'
         };
         
-        // Add the empty message to the chat
         setMessages((prev) => [...prev, assistantMessage]);
-        
-        // Setup typewriter effect
-        setTypingMessageId(assistantMessageId);
-        setFullContent(data.text);
-        setDisplayedContent('');
       } else if (data && data.error) {
         throw new Error(data.error);
-      } else {
-        // Fallback for any other unexpected response format
-        console.error('Unexpected response format:', data);
-        throw new Error('Received an unexpected response format');
       }
     } catch (error) {
       console.error('Error:', error);
@@ -140,16 +96,37 @@ export default function Chat() {
     }
   };
 
+  const handleSendMessage = async (content: string) => {
+    if (!currentImage) {
+      setError("Please upload an image first!");
+      return;
+    }
+
+    setError(null);
+    const userMessageId = generateId();
+    const userMessage: MessageType = { content, role: 'user', id: userMessageId };
+    setMessages((prev) => [...prev, userMessage]);
+    
+    await generateCaptions(currentImage);
+  };
+
   return (
-    <div className="flex flex-col h-full overflow-hidden">
-      {/* Message area */}
-      <div className="flex-1 overflow-y-auto overflow-x-hidden">
+    <div className="flex flex-col h-full overflow-hidden bg-gradient-to-b from-[#061B2B] to-[#0A2339]">
+      <div className="flex-1 overflow-y-auto overflow-x-hidden scrollbar-thin scrollbar-thumb-gray-700 scrollbar-track-transparent">
         {messages.length === 0 ? (
           <div className="flex items-center justify-center h-full">
-            <div className="text-center max-w-md px-4">
-              <h2 className="text-lg font-medium text-gray-200 mb-2">Welcome to Google Gemini</h2>
-              <p className="text-gray-400">
-                I&apos;m an AI assistant powered by Google&apos;s Gemini. Ask me anything, and I&apos;ll do my best to help you.
+            <div className="text-center max-w-2xl px-4 py-8 rounded-2xl bg-[rgba(6,27,43,0.6)] backdrop-blur-sm border border-[rgba(45,226,230,0.2)] shadow-lg transform hover:scale-[1.02] transition-all duration-300">
+              <div className="mb-6">
+                <div className="w-16 h-16 mx-auto rounded-2xl bg-[rgba(45,226,230,0.1)] border border-[rgba(45,226,230,0.4)] flex items-center justify-center">
+                  <ImageIcon className="w-8 h-8 text-[rgba(45,226,230,0.9)]" />
+                </div>
+              </div>
+              <h2 className="text-2xl font-medium text-[rgba(45,226,230,0.9)] mb-4">
+                Social Media Caption Generator
+              </h2>
+              <p className="text-gray-400 mb-4 leading-relaxed">
+                Upload an image and I'll generate engaging captions for your social media posts.
+                Get creative suggestions with relevant hashtags to boost your engagement!
               </p>
               {error && (
                 <div className="mt-4 p-3 bg-red-900/50 text-red-200 rounded-md text-sm">
@@ -159,39 +136,67 @@ export default function Chat() {
             </div>
           </div>
         ) : (
-          <div>
-            {messages.map((message) => (
-              <Message
+          <div className="space-y-1">
+            {messages.map((message, index) => (
+              <div 
                 key={message.id}
-                content={message.content}
-                role={message.role}
-                isTyping={message.id === typingMessageId}
-                displayedContent={message.id === typingMessageId ? displayedContent : undefined}
-              />
+                className="transform transition-all duration-300 hover:translate-x-1"
+              >
+                <div className="mx-auto max-w-4xl">
+                  <div className="flex gap-4">
+                    <div className="flex-shrink-0 mt-1">
+                      <div className={`h-8 w-8 rounded-full ${
+                        message.role === 'assistant' 
+                          ? 'bg-[rgba(45,226,230,0.1)] text-[rgba(45,226,230,0.9)] border border-[rgba(45,226,230,0.4)]' 
+                          : 'bg-[rgba(255,154,108,0.1)] text-[rgba(255,154,108,0.9)] border border-[rgba(255,154,108,0.4)]'
+                      } flex items-center justify-center transition-colors duration-300`}>
+                        {message.role === 'user' ? 'U' : 'A'}
+                      </div>
+                    </div>
+                    <div className="flex-1">
+                      {message.type === 'image' ? (
+                        <div className="mb-4 transform transition-all duration-300 hover:scale-[1.02]">
+                          <img
+                            src={message.imageUrl}
+                            alt="Uploaded"
+                            className="max-w-md rounded-lg shadow-lg border border-[rgba(45,226,230,0.2)]"
+                          />
+                        </div>
+                      ) : (
+                        <Message
+                          content={message.content}
+                          role={message.role}
+                          isTyping={false}
+                        />
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
             ))}
             {isLoading && (
-              <div className="py-5 bg-gray-800/40 backdrop-blur-sm">
+              <div className="py-5 bg-[rgba(6,27,43,0.4)] backdrop-blur-sm transform transition-all duration-300">
                 <div className="mx-auto max-w-4xl px-5 md:px-8">
                   <div className="flex gap-4">
                     <div className="flex-shrink-0 mt-1">
-                      <div className="h-8 w-8 rounded-full bg-orange-900/60 flex items-center justify-center text-orange-300">
-                        C
+                      <div className="h-8 w-8 rounded-full bg-[rgba(45,226,230,0.1)] border border-[rgba(45,226,230,0.4)] flex items-center justify-center text-[rgba(45,226,230,0.9)]">
+                        A
                       </div>
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex space-x-2 items-center">
-                        <div className="w-2 h-2 bg-gray-300 rounded-full animate-pulse"></div>
-                        <div className="w-2 h-2 bg-gray-300 rounded-full animate-pulse" style={{ animationDelay: '0.2s' }}></div>
-                        <div className="w-2 h-2 bg-gray-300 rounded-full animate-pulse" style={{ animationDelay: '0.4s' }}></div>
+                        <div className="w-2 h-2 bg-[rgba(45,226,230,0.9)] rounded-full animate-bounce"></div>
+                        <div className="w-2 h-2 bg-[rgba(45,226,230,0.9)] rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+                        <div className="w-2 h-2 bg-[rgba(45,226,230,0.9)] rounded-full animate-bounce" style={{ animationDelay: '0.4s' }}></div>
                       </div>
                     </div>
                   </div>
                 </div>
               </div>
             )}
-            {error && !isLoading && !typingMessageId && (
+            {error && !isLoading && (
               <div className="py-3 px-5 md:px-8 mx-auto max-w-4xl">
-                <div className="p-3 bg-red-900/50 text-red-200 rounded-md text-sm">
+                <div className="p-3 bg-red-900/50 text-red-200 rounded-md text-sm border border-red-900/50 shadow-lg">
                   Error: {error}
                 </div>
               </div>
@@ -201,8 +206,18 @@ export default function Chat() {
         <div ref={messagesEndRef} />
       </div>
 
-      {/* Input area */}
-      <ChatInput onSendMessage={handleSendMessage} isLoading={isLoading || !!typingMessageId} />
+      <div className="border-t border-[rgba(45,226,230,0.2)] bg-[rgba(6,27,43,0.8)] backdrop-blur-md">
+        <div className="max-w-4xl mx-auto">
+          <div className="flex flex-col gap-4 p-4">
+            <ImageUploader onImageSelect={handleImageSelect} />
+            <ChatInput 
+              onSendMessage={handleSendMessage} 
+              isLoading={isLoading}
+              placeholder="Ask for specific caption styles or themes..."
+            />
+          </div>
+        </div>
+      </div>
     </div>
   );
 } 
