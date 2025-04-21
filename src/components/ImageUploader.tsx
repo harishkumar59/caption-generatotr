@@ -2,6 +2,7 @@
 
 import React, { useState, useCallback } from 'react';
 import { Upload, Image as ImageIcon } from 'lucide-react';
+import Image from 'next/image';
 
 interface ImageUploaderProps {
   onImageSelect: (imageData: string) => void;
@@ -28,7 +29,7 @@ export default function ImageUploader({ onImageSelect }: ImageUploaderProps) {
 
     const files = e.dataTransfer.files;
     handleFiles(files);
-  }, []);
+  }, [handleFiles]);
 
   const handleFiles = (files: FileList) => {
     if (files?.[0]) {
@@ -75,9 +76,11 @@ export default function ImageUploader({ onImageSelect }: ImageUploaderProps) {
         <div className="flex flex-col items-center justify-center gap-4">
           {preview ? (
             <div className="relative w-full max-w-md mx-auto">
-              <img
+              <Image
                 src={preview}
                 alt="Preview"
+                width={500}
+                height={500}
                 className="w-full h-auto rounded-lg shadow-lg"
               />
               <div className="absolute inset-0 flex items-center justify-center bg-black/50 opacity-0 hover:opacity-100 transition-opacity rounded-lg">

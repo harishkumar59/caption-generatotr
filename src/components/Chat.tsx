@@ -5,6 +5,7 @@ import Message from './Message';
 import ChatInput from './ChatInput';
 import ImageUploader from './ImageUploader';
 import ImageIcon from './ImageIcon';
+import Image from 'next/image';
 
 type MessageType = {
   content: string;
@@ -125,7 +126,7 @@ export default function Chat() {
                 Social Media Caption Generator
               </h2>
               <p className="text-gray-400 mb-4 leading-relaxed">
-                Upload an image and I'll generate engaging captions for your social media posts.
+                Upload an image and I&apos;ll generate engaging captions for your social media posts.
                 Get creative suggestions with relevant hashtags to boost your engagement!
               </p>
               {error && (
@@ -156,9 +157,11 @@ export default function Chat() {
                     <div className="flex-1">
                       {message.type === 'image' ? (
                         <div className="mb-4 transform transition-all duration-300 hover:scale-[1.02]">
-                          <img
+                          <Image
                             src={message.imageUrl}
                             alt="Uploaded"
+                            width={320}
+                            height={320}
                             className="max-w-md rounded-lg shadow-lg border border-[rgba(45,226,230,0.2)]"
                           />
                         </div>
